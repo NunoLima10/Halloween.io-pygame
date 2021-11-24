@@ -1,6 +1,6 @@
-# importacoes
 from random import choice
 import pygame
+from pygame.draw import rect
 from inimigos import Inimigo
 from jogador import Jogador
 from mapa_niveis import *
@@ -8,40 +8,33 @@ from blocos import Bloco, Decoracao
 from mapa_niveis import tamanho_bloco
 from suporte import importar_csv, configuracao
 
-
-# calsse nivel
 class Nivel:
-    jogador: Jogador
-    musica: pygame.mixer.Sound
-    inimigos: pygame.sprite.Group
-    bloco_final: pygame.sprite.GroupSingle
-    blocos: pygame.sprite.Group
-    barreiras: pygame.sprite.Group
-
-    def __init__(self, nivel_mapa, superfice):
+    def __init__(self, nivel_mapa: int, superfice) -> None:
+        # Configurações de superficie
         self.superfice = superfice
         self.desenhar_mapa(nivel_mapa)
         self.deslocamento_mapa = 0
         self.pos_x_atual = 0
-
-        self.bg_1 = pygame.image.load('assets/mapaassets/fundos/bg1.png')
-        self.bg_2 = pygame.image.load('assets/mapaassets/fundos/bg2.png')
-        self.bg_3 = pygame.image.load('assets/mapaassets/fundos/bg3.png')
-
-        self.musicas = [pygame.mixer.Sound('assets/sons/musicas/musica1.mp3'),
-                        pygame.mixer.Sound('assets/sons/musicas/musica2.mp3'),
-                        pygame.mixer.Sound('assets/sons/musicas/musica3.mp3')]
+        self.back_grounds = [
+            pygame.image.load('assets/mapaassets/fundos/bg1.png'),
+            pygame.image.load('assets/mapaassets/fundos/bg2.png'),
+            pygame.image.load('assets/mapaassets/fundos/bg3.png')
+        ]
+        self.musicas = [
+            pygame.mixer.Sound('assets/sons/musicas/musica1.mp3'),
+            pygame.mixer.Sound('assets/sons/musicas/musica2.mp3'),
+            pygame.mixer.Sound('assets/sons/musicas/musica3.mp3')
+        ]
         self.colocar_muscica()
-
         self.blocos_na_tela = pygame.sprite.Group()
 
-    def colocar_muscica(self):
+    def colocar_muscica(self) -> None:
         if configuracao['musica']:
             self.musica = choice(self.musicas)
             self.musica.set_volume(0.2)
             self.musica.play()
 
-    def animar_background(self, tela, fundo1, fundo2, velocidade):
+    def animar_background(self, tela, fundo1, fundo2, velocidade) -> list:
         jogador = self.jogador.sprite
         if jogador.direcao.x > 0:
             fundo1.left += jogador.velocidade / velocidade
@@ -49,56 +42,55 @@ class Nivel:
         elif jogador.direcao.x < 0:
             fundo1.left -= jogador.velocidade / velocidade
             fundo2.left -= jogador.velocidade / velocidade
-        fundo1.right = 0 if fundo1.left >= tela_largura else fundo1.right
-        fundo2.right = 0 if fundo1.left >= tela_largura else fundo2.right
+
+        if fundo1.left >= tela_largura:
+            fundo1.right = 0
+        if fundo2.left >= tela_largura:
+            fundo2.right = 0
+
         return [fundo1, fundo2]
 
-    def desenhar_mapa(self, mapa_arquivos):
-        configuracao = importar_csv(mapa_arquivos['configuracao'])
-        self.configurar_mapa(configuracao)
+    def desenhar_mapa(self, mapa_arquivos) -> None:
+        self.configurar_mapa(importar_csv(mapa_arquivos['configuracao']))
+        self.desenhar_decoracao(importar_csv(mapa_arquivos['decoracao']))
+        self.desenhar_terreno(importar_csv(mapa_arquivos['terreno']))
 
-        decoracao = importar_csv(mapa_arquivos['decoracao'])
-        self.desenhar_decoracao(decoracao)
-
-        mapa = importar_csv(mapa_arquivos['terreno'])
-        self.desenhar_terreno(mapa)
-
-    def configurar_mapa(self, configuracao):
+    def configurar_mapa(self, configuracao) -> None:
         self.inimigos = pygame.sprite.Group()
         self.bloco_final = pygame.sprite.GroupSingle()
         self.barreiras = pygame.sprite.Group()
-
         for linha_index, linha in enumerate(configuracao):
             for coluna_index, coluna in enumerate(linha):
-                x, y = coluna_index * tamanho_bloco, linha_index * tamanho_bloco
+                x = coluna_index * tamanho_bloco
+                y = linha_index * tamanho_bloco
                 if coluna != '-1':
                     if coluna == '3':
                         self.jogador = pygame.sprite.GroupSingle()
                         self.jogador.add(Jogador((x, y)))
                     elif coluna == '4':
-                        self.bloco_final.add(Bloco((x, y), tamanho_bloco, '20'))  # bloco.image.fill('red')
+                        self.bloco_final.add(Bloco((x, y), tamanho_bloco, '20'))
                     elif coluna == '2':
                         self.inimigos.add(Inimigo((x, y), 2))
                     elif coluna == '0':
-                        self.barreiras.add(Bloco((x, y), tamanho_bloco, '20'))  # bloco.image.fill('red')
+                        self.barreiras.add(Bloco((x, y), tamanho_bloco, '20'))
 
-    def desenhar_decoracao(self, decoracao):
+    def desenhar_decoracao(self, decoracao) -> None:
         self.decoracao = pygame.sprite.Group()
         for linha_index, linha in enumerate(decoracao):
             for coluna_index, coluna in enumerate(linha):
-                x, y = coluna_index * tamanho_bloco, linha_index * tamanho_bloco
+                x = coluna_index * tamanho_bloco
+                y = linha_index * tamanho_bloco
                 if coluna != '-1':
                     self.decoracao.add(Decoracao((x, y), coluna))
 
-    def desenhar_terreno(self, mapa):
+    def desenhar_terreno(self, mapa) -> None:
         self.blocos = pygame.sprite.Group()
         for linha_index, linha in enumerate(mapa):
             for coluna_index, coluna in enumerate(linha):
-                x, y = coluna_index * tamanho_bloco, linha_index * tamanho_bloco
                 if coluna != '-1':
-                    self.blocos.add(Bloco((x, y), tamanho_bloco, coluna))
+                    self.blocos.add(Bloco((coluna_index * tamanho_bloco, linha_index * tamanho_bloco), tamanho_bloco, coluna))
 
-    def deslocar_mapa(self):
+    def deslocar_mapa(self) -> None:
         jogador = self.jogador.sprite
         jogador_x = jogador.rect.centerx
         jogador_dir = jogador.direcao.x  # que direcao jogador ta se movendo
@@ -112,7 +104,7 @@ class Nivel:
             self.deslocamento_mapa = 0
             jogador.velocidade = 8
 
-    def colisao_horizontal(self):
+    def colisao_horizontal(self) -> None:
         jogador = self.jogador.sprite
         jogador.rect.x += jogador.direcao.x * jogador.velocidade
         # verificando colisao com cada bloco
@@ -122,21 +114,18 @@ class Nivel:
                     jogador.rect.left = sprite.rect.right + 5
                     jogador.encostando_esq = True
                     self.pos_x_atual = jogador.rect.left
-                    # caixa de colisao
-                    # pygame.draw.rect(self.superfice,(255,0,0),jogador.rect,2)
                 elif jogador.direcao.x > 0:
                     jogador.rect.right = sprite.rect.left - 5
                     jogador.encostando_dir = True
                     self.pos_x_atual = jogador.rect.right
-                    # caixa de colisao
-                    # pygame.draw.rect(self.superfice,(255,0,0),jogador.rect,2)
-        # verificar se jogador ainda esta colidindo
-        if jogador.encostando_esq and (jogador.rect.left < self.pos_x_atual or jogador.direcao.x >= 0):
-            jogador.encostando_esq = False
-        if jogador.encostando_dir and (jogador.rect.right > self.pos_x_atual or jogador.direcao.x <= 0):
-            jogador.encostando_dir = False
 
-    def colisao_vertical(self):
+        # verificar se jogador ainda esta colidindo
+        if jogador.estados["encostando_esq"] and (jogador.rect.left < self.pos_x_atual or jogador.direcao.x >= 0):
+            jogador.estados["encostando_esq"] = False
+        if jogador.estados["encostando_dir"] and (jogador.rect.right > self.pos_x_atual or jogador.direcao.x <= 0):
+            jogador.estados["encostando_dir"] = False
+
+    def colisao_vertical(self) -> None:
         jogador = self.jogador.sprite
         jogador.aplicar_gravidade()
         for sprite in self.blocos.sprites():
@@ -144,26 +133,23 @@ class Nivel:
                 if jogador.direcao.y > 0:
                     jogador.rect.bottom = sprite.rect.top
                     jogador.direcao.y = 0
-                    jogador.encostando_chao = True
-                    # caixa de colisao
-                    # pygame.draw.rect(self.superfice,(255,0,0),jogador.rect,2)
-                    jogador.velocidade = jogador.velocidade * 4 # voltando velocidade ao norma se tocar o chao
+                    jogador.estados["encostando_chao"] = True
+                    jogador.velocidade = jogador.velocidade * 4
                 elif jogador.direcao.y < 0:
                     jogador.rect.top = sprite.rect.bottom
                     jogador.direcao.y = 0
-                    jogador.encostando_teto = True
-                    # caixa de colisao
-                    # pygame.draw.rect(self.superfice,(255,0,0),jogador.rect,2)
-        # verificar se jogador ainda esta colidindo
-        if jogador.encostando_chao and jogador.direcao.y < 0 or jogador.direcao.y > 1:
-            jogador.encostando_chao = False
-        if jogador.encostando_teto and jogador.direcao.y > 0:
-            jogador.encostando_teto = False
+                    jogador.estados["encostando_teto"] = True
 
-    def game_over(self):
+        # verificar se jogador ainda esta colidindo
+        if jogador.estados["encostando_chao"] and jogador.direcao.y < 0 or jogador.direcao.y > 1:
+            jogador.estados["encostando_chao"] = False
+        if jogador.estados["encostando_teto"] and jogador.direcao.y > 0:
+            jogador.estados["encostando_teto"] = False
+
+    def game_over(self) -> str:
         jogador = self.jogador.sprite
         pos_final = self.bloco_final.sprite.rect
-        if jogador.rect.y < -100 or jogador.rect.y > tela_altura + 100 or jogador.colisao_inimigo(self.inimigos):
+        if jogador.rect.y < -100 or jogador.rect.y > tela_altura + 100:
             if configuracao['musica']:
                 self.musica.fadeout(1000)
                 perder_sfx = pygame.mixer.Sound('assets/sons/sfx/morto.mp3')
@@ -173,15 +159,22 @@ class Nivel:
             if configuracao['musica']:
                 self.musica.fadeout(1000)
             return 'ganhou'
-        return 'jogando'
+        elif jogador.colisao_inimigo(self.inimigos):
+            if configuracao['musica']:
+                self.musica.fadeout(1000)
+            perder_sfx = pygame.mixer.Sound('assets/sons/sfx/morto.mp3')
+            perder_sfx.play()
+            return 'perdeu'
 
-    def ver_blocos_na_tela(self):
+        else:
+            return 'jogando'
+
+    def ver_blocos_na_tela(self) -> None:
         self.blocos_na_tela.empty()
-        for bloco in self.blocos.sprites():
-            if bloco.rect.left > -100 and bloco.rect.right < tela_largura + 100:
-                self.blocos_na_tela.add(bloco)
+        [self.blocos_na_tela.add(bloco) for bloco in self.blocos.sprites() if
+         bloco.rect.left > -100 and bloco.rect.right < tela_largura + 100]
 
-    def atualizar(self):
+    def atualizar(self) -> str:
         # Mapa
         self.blocos.update(self.deslocamento_mapa)
         self.ver_blocos_na_tela()
