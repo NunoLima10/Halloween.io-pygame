@@ -1,6 +1,5 @@
 #Importaçoes
 import pygame 
-from sys import exit
 from pygame.constants import MOUSEBUTTONDOWN
 from  mapa_niveis import *
 from suporte import Botao
@@ -52,9 +51,6 @@ while jogo_on:
     if not bg_musica_on:
         bg_musica_on=True
         bg_musica.play()
-        
-                
-    
     try:
          mouse_pos=pygame.mouse.get_pos() 
     except:
@@ -107,10 +103,7 @@ while jogo_on:
           
     
     tela.blit(background,(0,0))
-    #botoes
-    #botao1.desenhar(tela)
-    #botao2.desenhar(tela)
-    #botao3.desenhar(tela)
+    
     clique=False #reset clique 
     pygame.display.update() #atualizar a tela
     clock.tick(60)# limitar fps
